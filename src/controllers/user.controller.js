@@ -3,7 +3,7 @@ const formidable = require('formidable');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { userService } = require('../services');
+const { userService, taskService } = require('../services');
 
 const createUser = catchAsync(async (req, res) => {
   const form = formidable({ multiples: true });
@@ -15,7 +15,7 @@ const createUser = catchAsync(async (req, res) => {
         name: fields.name,
         email: `${fields.email}@mail.ru`,
         address: fields.address,
-        message: fields.message,
+        user_message: fields.message,
         user_avatar: fields.user_avatar,
       })
       .then((user) => {
@@ -27,9 +27,11 @@ const createUser = catchAsync(async (req, res) => {
 });
 
 const addNFT = catchAsync(async (req, res) => {
-  console.log(req)
-  const result = await userService.getUserByAddress(req.body.creators[0].account);
-  result.NFT.push(req.body);
+  const result = await userService.getUserByAddress(req.body.form.creators[0].account);
+  let form = {};
+  form = req.body.form;
+  form.taskName = req.taskName;
+  result.NFT.push(form);
   const user = await userService.updateUserById(result.id, { NFT: result.NFT });
   res.send(user);
 });
@@ -38,7 +40,23 @@ const getAllUsers = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['address']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
   const result = await userService.queryUsers(filter, options);
-  res.send(result);
+  let resArray = [];
+  result.results.forEach((user) => {
+    const filter = pick(user.address, ['author']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    let user1 = {};
+    taskService.queryTasks(filter, options).then((res1) => {
+      user1.tasks = res1.results;
+      user1.name = user.name;
+      user1.user_message = user.user_message;
+      user1.NFT = user.NFT;
+      user1.user_avatar = user.user_avatar;
+      resArray.push(user1);
+      if (resArray.length === result.results.length) {
+        res.send(resArray);
+      }
+    });
+  });
 });
 
 const getUsers = catchAsync(async (req, res) => {
@@ -75,5 +93,5 @@ module.exports = {
   updateUser,
   deleteUser,
   addNFT,
-  getAllUsers
+  getAllUsers,
 };

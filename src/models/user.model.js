@@ -9,21 +9,18 @@ const userSchema = mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true,
     },
     user_avatar: {
       type: String,
       required: false,
-      trim: true,
     },
     NFT: {
       type: Array,
-      required: false
+      required: false,
     },
     user_message: {
       type: String,
       required: false,
-      trim: true,
     },
     address: {
       type: String,
